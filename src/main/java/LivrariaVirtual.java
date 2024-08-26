@@ -1,4 +1,4 @@
-package Livraria;
+import conections.PostgreSQLConnection;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -66,7 +66,7 @@ public class LivrariaVirtual {
 
     private void salvarLivroNoBanco(Livro livro, String tipo) {
         String sql = "INSERT INTO livros(titulo, autores, editora, preco, tipo, frete, estoque, tamanho) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = PostgreSQLConnection.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, livro.getTitulo());
             pstmt.setString(2, livro.getAutores());
@@ -87,7 +87,7 @@ public class LivrariaVirtual {
             }
 
             pstmt.executeUpdate();
-            System.out.println("Livro cadastrado no banco de dados MySQL.");
+            System.out.println("Livro cadastrado no banco de dados.");
         } catch (SQLException e) {
             System.out.println("Erro ao salvar o livro no banco de dados: " + e.getMessage());
         }
@@ -147,14 +147,14 @@ public class LivrariaVirtual {
         String sql = "INSERT INTO vendas(cliente, valor, livros) VALUES(?, ?, ?)";
         String livrosJson = livroIds.toString();
 
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = PostgreSQLConnection.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, venda.getCliente());
             pstmt.setDouble(2, venda.getValor());
             pstmt.setString(3, livrosJson);
 
             pstmt.executeUpdate();
-            System.out.println("Venda registrada no banco de dados MySQL.");
+            System.out.println("Venda registrada no banco de dados.");
         } catch (SQLException e) {
             System.out.println("Erro ao salvar a venda no banco de dados: " + e.getMessage());
         }
@@ -163,7 +163,7 @@ public class LivrariaVirtual {
     public void listarLivrosImpressos() {
         System.out.println("\n--- Livros Impressos ---");
         String sql = "SELECT * FROM livros WHERE tipo = 'Impresso'";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = PostgreSQLConnection.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
@@ -183,7 +183,7 @@ public class LivrariaVirtual {
     public void listarLivrosEletronicos() {
         System.out.println("\n--- Livros Eletrônicos ---");
         String sql = "SELECT * FROM livros WHERE tipo = 'Eletronico'";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = PostgreSQLConnection.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
@@ -207,7 +207,7 @@ public class LivrariaVirtual {
     public void listarVendas() {
         System.out.println("\n--- Vendas Realizadas ---");
         String sql = "SELECT * FROM vendas";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = PostgreSQLConnection.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
@@ -223,7 +223,7 @@ public class LivrariaVirtual {
 
     private int getLivroIdByIndex(int index, String tipo) {
         String sql = "SELECT id FROM livros WHERE tipo = ? LIMIT 1 OFFSET ?";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = PostgreSQLConnection.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, tipo);
             pstmt.setInt(2, index);
@@ -239,7 +239,7 @@ public class LivrariaVirtual {
 
     private Livro getLivroById(int id, String tipo) {
         String sql = "SELECT * FROM livros WHERE id = ?";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = PostgreSQLConnection.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, id);
             ResultSet rs = pstmt.executeQuery();
@@ -266,7 +266,7 @@ public class LivrariaVirtual {
     }
 
     public static void main(String[] args) {
-        DatabaseConnection.createTables();
+        PostgreSQLConnection.createTables();
         LivrariaVirtual livraria = new LivrariaVirtual();
         Scanner scanner = new Scanner(System.in);
 

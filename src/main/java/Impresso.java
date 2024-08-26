@@ -1,5 +1,3 @@
-package Livraria;
-
 public class Impresso extends Livro {
     private float frete;
     private int estoque;

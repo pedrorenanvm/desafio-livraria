@@ -1,5 +1,3 @@
-package Livraria;
-
 public abstract class Livro {
     private String titulo;
     private String autores;
@@ -47,7 +45,7 @@ public abstract class Livro {
 
     @Override
     public String toString() {
-        return "Livro{" +
+        return "java.Livro{" +
                 "titulo='" + titulo + '\'' +
                 ", autores='" + autores + '\'' +
                 ", editora='" + editora + '\'' +

@@ -1,5 +1,3 @@
-package Livraria;
-
 public class Venda {
     private Livro[] livros;
     private static int numVendas = 0;
