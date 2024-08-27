@@ -1,18 +1,20 @@
+package main.java;
+
 public class Venda {
-    private Livro[] livros;
+    private main.java.Livro[] livros;
     private static int numVendas = 0;
     private int numero;
     private String cliente;
     private float valor;
 
     public Venda(int tamanho, String cliente) {
-        this.livros = new Livro[tamanho];
+        this.livros = new main.java.Livro[tamanho];
         this.cliente = cliente;
         this.numero = ++numVendas;
         this.valor = 0.0f;
     }
 
-    public void addLivro(Livro l, int index) {
+    public void addLivro(main.java.Livro l, int index) {
         if (index >= 0 && index < livros.length) {
             livros[index] = l;
             valor += l.getPreco();
@@ -21,17 +23,20 @@ public class Venda {
         }
     }
 
+    public void setValor(float valor) {
+        this.valor = valor;
+    }
 
     public void listarLivros() {
         System.out.println("Livros na venda número " + numero + ":");
-        for (Livro livro : livros) {
+        for (main.java.Livro livro : livros) {
             if (livro != null) {
                 System.out.println(livro);
             }
         }
     }
 
-    public Livro[] getLivros() {
+    public main.java.Livro[] getLivros() {
         return livros;
     }
 

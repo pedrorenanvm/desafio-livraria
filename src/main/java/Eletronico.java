@@ -1,4 +1,6 @@
-public class Eletronico extends Livro {
+package main.java;
+
+public class Eletronico extends main.java.Livro {
     private int tamanho;
 
     public Eletronico(String titulo, String autores, String editora, double preco, int tamanho) {

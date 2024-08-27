@@ -1,4 +1,6 @@
-import conections.PostgreSQLConnection;
+package main.java;
+
+import main.java.conections.PostgreSQLConnection;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -20,17 +22,113 @@ public class LivrariaVirtual {
         scanner.nextLine();
 
         if (tipo == 1 || tipo == 3) {
-            Impresso impresso = cadastrarLivroImpresso();
+            if (contarRegistros("Impresso") >= MAX_IMPRESSOS) {
+                System.out.println("Limite de livros impressos atingido!");
+                return;
+            }
+            main.java.Impresso impresso = cadastrarLivroImpresso();
             salvarLivroNoBanco(impresso, "Impresso");
         }
 
         if (tipo == 2 || tipo == 3) {
-            Eletronico eletronico = cadastrarLivroEletronico();
+            if (contarRegistros("Eletronico") >= MAX_ELETRONICOS) {
+                System.out.println("Limite de livros eletrônicos atingido!");
+                return;
+            }
+            main.java.Eletronico eletronico = cadastrarLivroEletronico();
             salvarLivroNoBanco(eletronico, "Eletronico");
         }
     }
 
-    private Impresso cadastrarLivroImpresso() {
+    public void realizarVenda() {
+        if (contarVendas() >= MAX_VENDAS) {
+            System.out.println("Limite de vendas atingido!");
+            return;
+        }
+
+        System.out.print("Nome do cliente: ");
+        String cliente = scanner.nextLine();
+
+        System.out.print("Quantidade de livros para comprar: ");
+        int quantidade = scanner.nextInt();
+        scanner.nextLine();
+
+        main.java.Venda venda = new main.java.Venda(quantidade, cliente);
+        ArrayList<Integer> livroIds = new ArrayList<>();
+
+        for (int i = 0; i < quantidade; i++) {
+            System.out.println("Tipo de livro (1-Impresso, 2-Eletronico): ");
+            int tipo = scanner.nextInt();
+            scanner.nextLine();
+
+            if (tipo == 1) {
+                listarLivrosImpressos();
+                System.out.print("Escolha o ID do livro impresso: ");
+                int id = scanner.nextInt();
+                scanner.nextLine();
+
+                main.java.Livro livro = getLivroById(id, "Impresso");
+                if (livro != null) {
+                    livroIds.add(id);
+                    venda.addLivro(livro, i);
+
+                    main.java.Impresso livroImpresso = (main.java.Impresso) livro;
+                    venda.setValor(venda.getValor() + livroImpresso.getFrete());
+
+                } else {
+                    System.out.println("ID inválido.");
+                }
+            } else if (tipo == 2) {
+                listarLivrosEletronicos();
+                System.out.print("Escolha o ID do livro eletrônico: ");
+                int id = scanner.nextInt();
+                scanner.nextLine();
+
+                main.java.Livro livro = getLivroById(id, "Eletronico");
+                if (livro != null) {
+                    livroIds.add(id);
+                    venda.addLivro(livro, i);
+                } else {
+                    System.out.println("ID inválido.");
+                }
+            } else {
+                System.out.println("Tipo de livro ou quantidade inválida.");
+            }
+        }
+
+        salvarVendaNoBanco(venda, livroIds);
+    }
+
+    private int contarRegistros(String tipo) {
+        String sql = "SELECT COUNT(*) FROM livros WHERE tipo = ?";
+        try (Connection conn = PostgreSQLConnection.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, tipo);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.out.println("Erro ao contar registros: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    private int contarVendas() {
+        String sql = "SELECT COUNT(*) FROM vendas";
+        try (Connection conn = PostgreSQLConnection.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.out.println("Erro ao contar vendas: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    private main.java.Impresso cadastrarLivroImpresso() {
         System.out.print("Título: ");
         String titulo = scanner.nextLine();
         System.out.print("Autores: ");
@@ -45,10 +143,10 @@ public class LivrariaVirtual {
         int estoque = scanner.nextInt();
         scanner.nextLine();
 
-        return new Impresso(titulo, autores, editora, preco, frete, estoque);
+        return new main.java.Impresso(titulo, autores, editora, preco, frete, estoque);
     }
 
-    private Eletronico cadastrarLivroEletronico() {
+    private main.java.Eletronico cadastrarLivroEletronico() {
         System.out.print("Título: ");
         String titulo = scanner.nextLine();
         System.out.print("Autores: ");
@@ -61,10 +159,10 @@ public class LivrariaVirtual {
         int tamanho = scanner.nextInt();
         scanner.nextLine();
 
-        return new Eletronico(titulo, autores, editora, preco, tamanho);
+        return new main.java.Eletronico(titulo, autores, editora, preco, tamanho);
     }
 
-    private void salvarLivroNoBanco(Livro livro, String tipo) {
+    private void salvarLivroNoBanco(main.java.Livro livro, String tipo) {
         String sql = "INSERT INTO livros(titulo, autores, editora, preco, tipo, frete, estoque, tamanho) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = PostgreSQLConnection.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -75,12 +173,12 @@ public class LivrariaVirtual {
             pstmt.setString(5, tipo);
 
             if (tipo.equals("Impresso")) {
-                Impresso impresso = (Impresso) livro;
+                main.java.Impresso impresso = (main.java.Impresso) livro;
                 pstmt.setDouble(6, impresso.getFrete());
                 pstmt.setInt(7, impresso.getEstoque());
                 pstmt.setNull(8, java.sql.Types.INTEGER);
             } else if (tipo.equals("Eletronico")) {
-                Eletronico eletronico = (Eletronico) livro;
+                main.java.Eletronico eletronico = (main.java.Eletronico) livro;
                 pstmt.setNull(6, java.sql.Types.DOUBLE);
                 pstmt.setNull(7, java.sql.Types.INTEGER);
                 pstmt.setInt(8, eletronico.getTamanho());
@@ -93,57 +191,7 @@ public class LivrariaVirtual {
         }
     }
 
-    public void realizarVenda() {
-        System.out.print("Nome do cliente: ");
-        String cliente = scanner.nextLine();
-
-        System.out.print("Quantidade de livros para comprar: ");
-        int quantidade = scanner.nextInt();
-        scanner.nextLine();
-
-        Venda venda = new Venda(quantidade, cliente);
-        ArrayList<Integer> livroIds = new ArrayList<>();
-
-        for (int i = 0; i < quantidade; i++) {
-            System.out.println("Tipo de livro (1-Impresso, 2-Eletronico): ");
-            int tipo = scanner.nextInt();
-            scanner.nextLine();
-
-            if (tipo == 1) {
-                listarLivrosImpressos();
-                System.out.print("Escolha o índice do livro impresso: ");
-                int index = scanner.nextInt();
-                scanner.nextLine();
-
-                int livroId = getLivroIdByIndex(index, "Impresso");
-                if (livroId != -1) {
-                    livroIds.add(livroId);
-                    venda.addLivro(getLivroById(livroId, "Impresso"), i);
-                } else {
-                    System.out.println("Índice inválido.");
-                }
-            } else if (tipo == 2) {
-                listarLivrosEletronicos();
-                System.out.print("Escolha o índice do livro eletrônico: ");
-                int index = scanner.nextInt();
-                scanner.nextLine();
-
-                int livroId = getLivroIdByIndex(index, "Eletronico");
-                if (livroId != -1) {
-                    livroIds.add(livroId);
-                    venda.addLivro(getLivroById(livroId, "Eletronico"), i);
-                } else {
-                    System.out.println("Índice inválido.");
-                }
-            } else {
-                System.out.println("Tipo de livro ou quantidade inválida.");
-            }
-        }
-
-        salvarVendaNoBanco(venda, livroIds);
-    }
-
-    private void salvarVendaNoBanco(Venda venda, ArrayList<Integer> livroIds) {
+    private void salvarVendaNoBanco(main.java.Venda venda, ArrayList<Integer> livroIds) {
         String sql = "INSERT INTO vendas(cliente, valor, livros) VALUES(?, ?, ?)";
         String livrosJson = livroIds.toString();
 
@@ -221,38 +269,23 @@ public class LivrariaVirtual {
         }
     }
 
-    private int getLivroIdByIndex(int index, String tipo) {
-        String sql = "SELECT id FROM livros WHERE tipo = ? LIMIT 1 OFFSET ?";
-        try (Connection conn = PostgreSQLConnection.connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, tipo);
-            pstmt.setInt(2, index);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt("id");
-            }
-        } catch (SQLException e) {
-            System.out.println("Erro ao obter ID do livro: " + e.getMessage());
-        }
-        return -1;
-    }
-
-    private Livro getLivroById(int id, String tipo) {
-        String sql = "SELECT * FROM livros WHERE id = ?";
+    private main.java.Livro getLivroById(int id, String tipo) {
+        String sql = "SELECT * FROM livros WHERE id = ? AND tipo = ?";
         try (Connection conn = PostgreSQLConnection.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, id);
+            pstmt.setString(2, tipo);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 if (tipo.equals("Impresso")) {
-                    return new Impresso(rs.getString("titulo"),
+                    return new main.java.Impresso(rs.getString("titulo"),
                             rs.getString("autores"),
                             rs.getString("editora"),
                             rs.getDouble("preco"),
                             rs.getFloat("frete"),
                             rs.getInt("estoque"));
                 } else if (tipo.equals("Eletronico")) {
-                    return new Eletronico(rs.getString("titulo"),
+                    return new main.java.Eletronico(rs.getString("titulo"),
                             rs.getString("autores"),
                             rs.getString("editora"),
                             rs.getDouble("preco"),

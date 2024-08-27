@@ -1,4 +1,6 @@
-public class Impresso extends Livro {
+package main.java;
+
+public class Impresso extends main.java.Livro {
     private float frete;
     private int estoque;
 
